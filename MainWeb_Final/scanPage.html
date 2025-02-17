@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Classifier</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Center the result content */
+        #result {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        #result img {
+            max-width: 100%;
+            max-height: 300px;
+            margin-bottom: 20px;
+        }
+
+        #result p {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <ul class="main-nav">
+            <li><a href="Home.html">Home</a></li>
+            <li><a href="Register.html">Register</a></li>
+        </ul>
+    </nav>
+
+    <!-- Header -->
+    <header class="page-header">
+        <h1>Food Classifier</h1>
+        <p>Upload your food image to classify it and get calorie information.</p>
+    </header>
+
+    <!-- Content -->
+    <div class="container">
+        <div class="upload-box">
+            <form id="uploadForm">
+                <label for="fileInput">Click to Upload Your Image</label>
+                <input type="file" id="fileInput" name="file" accept="image/*" required>
+                <p>Accepted formats: JPG, PNG</p>
+                <div class="button-container">
+                    <button type="submit">Analyze</button>
+                </div>
+            </form>
+        </div>
+        <div id="result">
+            <!-- Image and AI result will be displayed here -->
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="logo">
+            <img src="assets/logo.png" alt="Company Logo">
+        </div>
+        <p>© All rights reserved. CATERINGZ Group 2024</p>
+        <p>Connect with us on:</p>
+        <div class="socials">
+            <div class="social-item">
+                <img src="assets/instagram.png" alt="Instagram Icon">
+                <span>@CaloriQ</span>
+            </div>
+            <div class="social-item">
+                <img src="assets/facebook.png" alt="Facebook Icon">
+                <span>CaloriQ</span>
+            </div>
+            <div class="social-item">
+                <img src="assets/X.png" alt="Twitter Icon">
+                <span>@CaloriQ</span>
+            </div>
+        </div>
+    </footer>
+
+
+    <script>
+        const form = document.getElementById('uploadForm');
+        const fileInput = document.getElementById('fileInput');
+        const resultDiv = document.getElementById('result');
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const file = fileInput.files[0];
+
+            if (!file) {
+                resultDiv.innerText = 'Please select a file.';
+                return;
+            }
+
+            // Display the uploaded image
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                resultDiv.innerHTML = `
+                    <img src="${e.target.result}" alt="Uploaded Image" style="max-width: 100%; max-height: 300px; margin-bottom: 20px;">
+                    <p>Processing...</p>
+                `;
+            };
+            reader.readAsDataURL(file);
+
+            // Send the image to the server
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.error) {
+                    resultDiv.innerHTML += `<p>Error: ${data.error}</p>`;
+                } else {
+                    resultDiv.innerHTML = `
+                        <img src="${URL.createObjectURL(file)}" alt="Uploaded Image" style="max-width: 100%; max-height: 300px; margin-bottom: 20px;">
+                        <p><strong>Predicted Class:</strong> ${data.class}</p>
+                        <p><strong>Calories:</strong> ${data.calories_kcal} kcal / ${data.calories_kJ} kJ</p>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML += `<p>Error: ${error.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>
